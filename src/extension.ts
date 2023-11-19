@@ -1,26 +1,79 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+    let disposable = vscode.commands.registerCommand('ros2-gde.create-package', async () => {
+        const packageName = await vscode.window.showInputBox({
+            prompt: 'Enter the name for your ROS2 package'
+        });
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "ros2-gde" is now active!');
+        if (!packageName) {
+            vscode.window.showErrorMessage('Package name is required.');
+            return;
+        }
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('ros2-gde.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from ROS2 GDE!');
-	});
+		const selectedType = await vscode.window.showQuickPick(
+            ['roscpp', 'rospy'],
+            { placeHolder: 'Select ROS2 package type' }
+        );
 
-	context.subscriptions.push(disposable);
+        if (!selectedType) {
+            vscode.window.showErrorMessage('Please select a ROS2 package type.');
+            return;
+        }
+
+        // Directory where packages are created
+		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found.');
+            return;
+        }
+		const packagePath = path.join(workspaceFolder.uri.fsPath, 'src', packageName);
+
+        try {
+            // Create the main package directory
+            fs.mkdirSync(packagePath);
+
+            // Create subdirectories (src, include, launch, etc.)
+            createDirectories(packagePath);
+
+            // Create necessary files (CMakeLists.txt, package.xml, etc.)
+            createFiles(packagePath, packageName);
+
+            vscode.window.showInformationMessage(`ROS2 package '${packageName}' created successfully!`);
+        } catch (err) {
+            vscode.window.showErrorMessage(`Error creating package: ${err}`);
+        }
+    });
+
+    context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+function createDirectories(packagePath: string) {
+    const directories = ['src', 'include', 'launch', 'msg', 'srv'];
+
+    directories.forEach(dir => {
+        fs.mkdirSync(path.join(packagePath, dir));
+    });
+}
+
+function createFiles(packagePath: string, packageName: string) {
+    const cmakeFileContent = `# CMakeLists.txt
+cmake_minimum_required(VERSION 3.5)
+project(${packageName})
+
+# ... (add your CMake configurations here)
+`;
+
+    const packageXmlContent = `<?xml version="1.0"?>
+<package format="3">
+  <name>${packageName}</name>
+  <version>0.0.0</version>
+  <description>ROS2 package</description>
+  <!-- ... (add your package details here) -->
+</package>`;
+
+    fs.writeFileSync(path.join(packagePath, 'CMakeLists.txt'), cmakeFileContent);
+    fs.writeFileSync(path.join(packagePath, 'package.xml'), packageXmlContent);
+}
