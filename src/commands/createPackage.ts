@@ -151,7 +151,7 @@ function createInterfaceDirectiores(packagePath: string) {
 
 // Content of the params.yaml file
 const configFileContent = `package_slug_node:
-  ros_parameters:
+  ros__parameters:
     foo: 'This is the package_slug package'`
 
 // Content of the package.xml file
