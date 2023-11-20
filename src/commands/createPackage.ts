@@ -159,7 +159,7 @@ const xmlFileContent = `<?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>package_slug</name>
-  <version>0.0.1</version>
+  <version>0.1.0</version>
   <description>package_description</description>
   <maintainer email="maintainer_email">maintainer_name</maintainer>
   <license>package_license</license>
@@ -184,7 +184,7 @@ def generate_launch_description():
     package_slug_node = Node(
         package='package_slug',
         executable='package_slug_node',
-        name='package_slug',
+        name='package_slug_node',
         emulate_tty=True,
         arguments=['--ros-args', '--log-level', 'DEBUG'],
         parameters = [
@@ -202,6 +202,64 @@ const setupcfgFileContent = `[develop]
 script_dir=$base/lib/package_slug
 [install]
 install_scripts=$base/lib/package_slug
+`
+
+// Content of setup.py
+const setuppyFileContent = `from glob import glob
+import os
+
+from setuptools import setup
+
+package_name = 'package_slug'
+
+setup(
+    name=package_name,
+    version='0.1.0',
+    packages=[package_name],
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'config'), glob('config/*'))
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='name_maintainer',
+    maintainer_email='email_maintainer',
+    description='package_description',
+    license='selected_license',
+    entry_points={
+        'console_scripts': [
+            'package_slug_node = package_slug.package_slug_node:main'
+        ],
+    },
+)
+`
+
+// Content of the python node
+const pythonNodeFileContent = `import rclpy
+from rclpy.node import Node
+
+
+class package_slug(Node):
+    def __init__(self) -> None:
+        super().__init__('package_slug_node')
+
+        # Do something
+        self.declare_parameter("foo", "bar")
+        foo = self.get_parameter("foo").get_parameter_value().string_value
+        self.get_logger().info(foo)
+
+
+def main():
+    rclpy.init()
+    node = package_slug()
+    rclpy.spin(node)
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
 `
 
 /**
@@ -285,10 +343,17 @@ function createPythonFiles(packageSlug: string, packagePath: string, packageDesc
         setupcfgFileContent.replaceAll('package_slug', packageSlug));
 
     // setup.py
-    fs.writeFileSync(path.join(packagePath, 'setup.py'), '');
+    fs.writeFileSync(path.join(packagePath, 'setup.py'),
+        setuppyFileContent.replaceAll(
+            'package_slug', packageSlug).replace(
+            'name_maintainer', maintainerName).replace(
+            'email_maintainer', maintainerEmail).replace(
+            'selected_license', selectedLicense)
+    );
 
     // first node
-    fs.writeFileSync(path.join(packagePath, packageSlug, `${packageSlug}_node.py`), '');
+    fs.writeFileSync(path.join(packagePath, packageSlug, `${packageSlug}_node.py`),
+    pythonNodeFileContent.replaceAll('package_slug', packageSlug));
 }
 
 /**
