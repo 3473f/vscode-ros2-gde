@@ -169,6 +169,66 @@ const xmlFileContent = `<?xml version="1.0"?>
   </export>
 </package>`
 
+// Content of the CMakeLists.txt for C++ package
+const cmakeListsFileContent = `cmake_minimum_required(VERSION 3.5)
+project({{PACKAGE_SLUG}})
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+
+install(DIRECTORY
+  launch
+  config
+  DESTINATION share/\${PROJECT_NAME}
+)
+
+add_executable({{PACKAGE_SLUG}}_node src/{{PACKAGE_SLUG}}_node.cpp)
+ament_target_dependencies({{PACKAGE_SLUG}}_node rclcpp)
+
+install(TARGETS
+  {{PACKAGE_SLUG}}_node
+  DESTINATION lib/\${PROJECT_NAME})
+
+ament_package()`
+
+// Content of the node file for C++ package
+const cppNodeFileContent = `#include "rclcpp/rclcpp.hpp"
+#include <string>
+
+class {{CLASS_NAME}} : public rclcpp::Node {
+public:
+    {{CLASS_NAME}} () : Node("{{PACKAGE_SLUG}}_node") {
+        // Declare a parameter named "foo"
+        this->declare_parameter<std::string>("foo", "bar");
+
+        // Get the value of the parameter "foo"
+        std::string foo_value;
+        if (this->get_parameter("foo", foo_value)) {
+            RCLCPP_INFO(this->get_logger(), "Value of 'foo' parameter: %s", foo_value);
+        } else {
+            RCLCPP_ERROR(this->get_logger(), "Failed to get the 'foo' parameter.");
+        }
+    }
+};
+
+int main(int argc, char **argv) {
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<{{CLASS_NAME}}>();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    return 0;
+}`
+
 // Content of the package.xml file for interface messages
 const interfaceXmlFileContent = `<?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
@@ -190,6 +250,7 @@ const interfaceXmlFileContent = `<?xml version="1.0"?>
   </export>
 </package>`
 
+// Content of the interface package CMakeLists.txt
 const interfaceCmakeListsFileContent = `cmake_minimum_required(VERSION 3.5)
 project({{PACKAGE_SLUG}})
 
@@ -367,10 +428,14 @@ function createCPPFiles(packageSlug: string,
         launchFileContent.replaceAll('{{PACKAGE_SLUG}}', `${packageSlug}`));
 
     // CMakeLists.txt
-    fs.writeFileSync(path.join(packagePath, 'CMakeLists.txt'), '');
+    fs.writeFileSync(path.join(packagePath, 'CMakeLists.txt'),
+        cmakeListsFileContent.replaceAll('{{PACKAGE_SLUG}}', packageSlug));
 
     // first node
-    fs.writeFileSync(path.join(packagePath, 'src', `${packageSlug}_node.cpp`), '');
+    fs.writeFileSync(path.join(packagePath, 'src', `${packageSlug}_node.cpp`),
+        cppNodeFileContent.replaceAll(
+            '{{PACKAGE_SLUG}}', packageSlug).replaceAll(
+            '{{CLASS_NAME}}', snakeToCamelCase(packageSlug)));
 }
 
 /**
@@ -429,9 +494,9 @@ function createPythonFiles(packageSlug: string,
 
     // first node
     fs.writeFileSync(path.join(packagePath, packageSlug, `${packageSlug}_node.py`),
-    pythonNodeFileContent.replaceAll(
-        '{{PACKAGE_SLUG}}', packageSlug).replaceAll(
-        '{{CLASS_NAME}}', snakeToCamelCase(packageSlug)));
+        pythonNodeFileContent.replaceAll(
+            '{{PACKAGE_SLUG}}', packageSlug).replaceAll(
+            '{{CLASS_NAME}}', snakeToCamelCase(packageSlug)));
 }
 
 /**
