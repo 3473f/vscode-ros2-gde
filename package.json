@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "ros2-gde.helloWorld",
-        "title": "Hello World"
+        "command": "ros2-gde.create-package",
+        "title": "ROS2 GDE: Create Package"
       }
     ]
   },
