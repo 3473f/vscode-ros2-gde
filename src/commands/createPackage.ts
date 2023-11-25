@@ -242,7 +242,7 @@ const pythonNodeFileContent = `import rclpy
 from rclpy.node import Node
 
 
-class package_slug(Node):
+class class_name(Node):
     def __init__(self) -> None:
         super().__init__('package_slug_node')
 
@@ -254,7 +254,7 @@ class package_slug(Node):
 
 def main():
     rclpy.init()
-    node = package_slug()
+    node = class_name()
     rclpy.spin(node)
     rclpy.shutdown()
 
@@ -353,7 +353,9 @@ function createPythonFiles(packageSlug: string, packagePath: string, packageDesc
 
     // first node
     fs.writeFileSync(path.join(packagePath, packageSlug, `${packageSlug}_node.py`),
-    pythonNodeFileContent.replaceAll('package_slug', packageSlug));
+    pythonNodeFileContent.replaceAll(
+        'package_slug', packageSlug).replaceAll(
+        'class_name', snakeToCamelCase(packageSlug)));
 }
 
 /**
@@ -380,4 +382,15 @@ function createInterfaceFiles(packageSlug: string, packagePath: string, packageD
             'package_license', `${selectedLicense}`).replace(
             'ament_type', 'ament_cmake')
     );
+}
+
+/**
+ * Convert snake case tring to camel case string
+ * @param input snake case string
+ * @returns camel case string
+ */
+function snakeToCamelCase(input: string): string {
+    return input.replace(/_([a-z])/g, function(match) {
+        return match[1].toUpperCase();
+    });
 }
