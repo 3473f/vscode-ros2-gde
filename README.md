@@ -15,6 +15,7 @@ ROS2 GDE (Graphical Development Environment) is a Visual Studio Code extension t
 ## Planned Features
 
 - Workspace creation
+- Custom templates support
 - Package documentation template using `ros2autodoc`.
 - Application creation through a GUI
 - ... (feature requests are welcome)
