@@ -1,6 +1,6 @@
-# VS Code ROS2 Graphical Development Environment
+# ROS2 Graphical Development Environment
 
-The ROS2 GDE (Graphical Development Environment) extension provides a set of GUI tools to simplify ROS2 development.
+ROS2 GDE (Graphical Development Environment) is a Visual Studio Code extension that provides a set of GUI tools to simplify ROS2 development.
 
 ## Features
 
