@@ -150,25 +150,94 @@ function createInterfaceDirectiores(packagePath: string) {
 }
 
 // Content of the params.yaml file
-const configFileContent = `package_slug_node:
+const configFileContent = `{{PACKAGE_SLUG}}_node:
   ros__parameters:
-    foo: 'This is the package_slug package'`
+    foo: 'This is the {{PACKAGE_SLUG}} package'`
 
 // Content of the package.xml file
 const xmlFileContent = `<?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>package_slug</name>
+  <name>{{PACKAGE_SLUG}}</name>
   <version>0.1.0</version>
-  <description>package_description</description>
-  <maintainer email="maintainer_email">maintainer_name</maintainer>
-  <license>package_license</license>
+  <description>{{PACKAGE_DESCRIPTION}}</description>
+  <maintainer email="{{MAINTAINER_EMAIL}}">{{MAINTAINER_NAME}}</maintainer>
+  <license>{{LICENSE}}</license>
 
   <export>
-    <build_type>ament_type</build_type>
+    <build_type>{{AMENT_TYPE}}</build_type>
   </export>
-</package>
-`
+</package>`
+
+// Content of the package.xml file for interface messages
+const interfaceXmlFileContent = `<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>{{PACKAGE_SLUG}}</name>
+  <version>0.1.0</version>
+  <description>{{PACKAGE_DESCRIPTION}}</description>
+  <maintainer email="{{MAINTAINER_EMAIL}}">{{MAINTAINER_NAME}}</maintainer>
+  <license>{{LICENSE}}</license>
+
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>{{AMENT_TYPE}}</build_type>
+  </export>
+</package>`
+
+const interfaceCmakeListsFileContent = `cmake_minimum_required(VERSION 3.5)
+project({{PACKAGE_SLUG}})
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+
+find_package(rosidl_default_generators REQUIRED)
+
+set(msg_files
+  "msg/Message1.msg"
+)
+
+set(srv_files
+  "srv/Service1.srv"
+)
+
+set(action_files
+  "action/Action1.action"
+)
+
+rosidl_generate_interfaces(\${PROJECT_NAME}
+  \${msg_files}
+  \${srv_files}
+  \${action_files}
+)
+
+ament_package()`
+
+// Content of the message file
+const msgFileContent = `string example_string
+int64 example_number`
+
+// Content of the service file
+const srvFileContent = `string cmd
+---
+bool success`
+
+// Content of the action file
+const actionFileContent = `string cmd
+---
+uint64 feedback
+---
+bool success
+uint64 result`
 
 // Content of the launch file
 const launchFileContent = `from ament_index_python.packages import get_package_share_directory
@@ -176,15 +245,15 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterFile
 
-package_path = get_package_share_directory('package_slug')
+package_path = get_package_share_directory('{{PACKAGE_SLUG}}')
 
 def generate_launch_description():
     ld = LaunchDescription()
 
-    package_slug_node = Node(
-        package='package_slug',
-        executable='package_slug_node',
-        name='package_slug_node',
+    {{PACKAGE_SLUG}}_node = Node(
+        package='{{PACKAGE_SLUG}}',
+        executable='{{PACKAGE_SLUG}}_node',
+        name='{{PACKAGE_SLUG}}_node',
         emulate_tty=True,
         arguments=['--ros-args', '--log-level', 'DEBUG'],
         parameters = [
@@ -193,16 +262,15 @@ def generate_launch_description():
                     allow_substs = True)]
     )
 
-    ld.add_action(package_slug_node)
+    ld.add_action({{PACKAGE_SLUG}}_node)
 
-    return ld
-`
+    return ld`
+
 // Content of setup.cfg file
 const setupcfgFileContent = `[develop]
-script_dir=$base/lib/package_slug
+script_dir=$base/lib/{{PACKAGE_SLUG}}
 [install]
-install_scripts=$base/lib/package_slug
-`
+install_scripts=$base/lib/{{PACKAGE_SLUG}}`
 
 // Content of setup.py
 const setuppyFileContent = `from glob import glob
@@ -210,11 +278,10 @@ import os
 
 from setuptools import setup
 
-package_name = 'package_slug'
+package_name = '{{PACKAGE_SLUG}}'
 
 setup(
-    name=package_name,
-    version='0.1.0',
+    name=package_name,find_package(geometry_msgs)
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -225,26 +292,25 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='name_maintainer',
-    maintainer_email='email_maintainer',
-    description='package_description',
-    license='selected_license',
+    maintainer='{{MAINTAINER_NAME}}',
+    {{MAINTAINER_EMAIL}}='{{MAINTAINER_EMAIL}}',
+    description='{{PACKAGE_DESCRIPTION}}',
+    license='{{LICENSE}}',
     entry_points={
         'console_scripts': [
-            'package_slug_node = package_slug.package_slug_node:main'
+            '{{PACKAGE_SLUG}}_node = {{PACKAGE_SLUG}}.{{PACKAGE_SLUG}}_node:main'
         ],
     },
-)
-`
+)`
 
 // Content of the python node
 const pythonNodeFileContent = `import rclpy
 from rclpy.node import Node
 
 
-class class_name(Node):
+class {{CLASS_NAME}}(Node):
     def __init__(self) -> None:
-        super().__init__('package_slug_node')
+        super().__init__('{{PACKAGE_SLUG}}_node')
 
         # Do something
         self.declare_parameter("foo", "bar")
@@ -254,7 +320,7 @@ class class_name(Node):
 
 def main():
     rclpy.init()
-    node = class_name()
+    node = {{CLASS_NAME}}()
     rclpy.spin(node)
     rclpy.shutdown()
 
@@ -271,29 +337,34 @@ if __name__ == '__main__':
 * @param maintainerName first and last name of the maintainer
 * @param selectedLicense license of the package
 */
-function createCPPFiles(packageSlug: string, packagePath: string, packageDescription: string,
-    maintainerEmail: string, maintainerName: string, selectedLicense: string) {
+function createCPPFiles(packageSlug: string,
+                        packagePath: string,
+                        packageDescription: string,
+                        maintainerEmail: string,
+                        maintainerName: string,
+                        selectedLicense: string)
+{
     // resource
     fs.writeFileSync(path.join(packagePath, 'resource', packageSlug), '');
 
     // params.yaml
     fs.writeFileSync(path.join(packagePath, 'config', 'params.yaml'),
-        configFileContent.replaceAll('package_slug', `${packageSlug}`));
+        configFileContent.replaceAll('{{PACKAGE_SLUG}}', `${packageSlug}`));
 
     // package.xml
     fs.writeFileSync(path.join(packagePath, 'package.xml'),
         xmlFileContent.replace(
-            'package_slug', `${packageSlug}`).replace(
-            'package_description', `${packageDescription}`).replace(
-            'maintainer_email', `${maintainerEmail}`).replace(
-            'maintainer_name', `${maintainerName}`).replace(
-            'package_license', `${selectedLicense}`).replace(
-            'ament_type', 'ament_cmake')
+            '{{PACKAGE_SLUG}}', `${packageSlug}`).replace(
+            '{{PACKAGE_DESCRIPTION}}', `${packageDescription}`).replace(
+            '{{MAINTAINER_EMAIL}}', `${maintainerEmail}`).replace(
+            '{{MAINTAINER_NAME}}', `${maintainerName}`).replace(
+            '{{LICENSE}}', `${selectedLicense}`).replace(
+            '{{AMENT_TYPE}}', 'ament_cmake')
     );
 
     // launch.py
     fs.writeFileSync(path.join(packagePath, 'launch', `${packageSlug}.launch.py`),
-        launchFileContent.replaceAll('package_slug', `${packageSlug}`));
+        launchFileContent.replaceAll('{{PACKAGE_SLUG}}', `${packageSlug}`));
 
     // CMakeLists.txt
     fs.writeFileSync(path.join(packagePath, 'CMakeLists.txt'), '');
@@ -311,8 +382,13 @@ function createCPPFiles(packageSlug: string, packagePath: string, packageDescrip
 * @param maintainerName first and last name of the maintainer
 * @param selectedLicense license of the package
 */
-function createPythonFiles(packageSlug: string, packagePath: string, packageDescription: string,
-    maintainerEmail: string, maintainerName: string, selectedLicense: string) {
+function createPythonFiles(packageSlug: string,
+                           packagePath: string,
+                           packageDescription: string,
+                           maintainerEmail: string,
+                           maintainerName: string,
+                           selectedLicense: string)
+{
     // resource
     fs.writeFileSync(path.join(packagePath, 'resource', packageSlug), '');
 
@@ -321,41 +397,41 @@ function createPythonFiles(packageSlug: string, packagePath: string, packageDesc
 
     // params.yaml
     fs.writeFileSync(path.join(packagePath, 'config', 'params.yaml'),
-        configFileContent.replaceAll('package_slug', packageSlug));
+        configFileContent.replaceAll('{{PACKAGE_SLUG}}', packageSlug));
 
     // package.xml
     fs.writeFileSync(path.join(packagePath, 'package.xml'),
         xmlFileContent.replace(
-            'package_slug', `${packageSlug}`).replace(
-            'package_description', `${packageDescription}`).replace(
-            'maintainer_email', `${maintainerEmail}`).replace(
-            'maintainer_name', `${maintainerName}`).replace(
-            'package_license', `${selectedLicense}`).replace(
-            'ament_type', 'ament_python')
+            '{{PACKAGE_SLUG}}', `${packageSlug}`).replace(
+            '{{PACKAGE_DESCRIPTION}}', `${packageDescription}`).replace(
+            '{{MAINTAINER_EMAIL}}', `${maintainerEmail}`).replace(
+            '{{MAINTAINER_NAME}}', `${maintainerName}`).replace(
+            '{{LICENSE}}', `${selectedLicense}`).replace(
+            '{{AMENT_TYPE}}', 'ament_python')
     );
 
     // launch.py
     fs.writeFileSync(path.join(packagePath, 'launch', `${packageSlug}.launch.py`),
-        launchFileContent.replaceAll('package_slug', packageSlug));
+        launchFileContent.replaceAll('{{PACKAGE_SLUG}}', packageSlug));
 
     // setup.cfg
     fs.writeFileSync(path.join(packagePath, 'setup.cfg'),
-        setupcfgFileContent.replaceAll('package_slug', packageSlug));
+        setupcfgFileContent.replaceAll('{{PACKAGE_SLUG}}', packageSlug));
 
     // setup.py
     fs.writeFileSync(path.join(packagePath, 'setup.py'),
         setuppyFileContent.replaceAll(
-            'package_slug', packageSlug).replace(
-            'name_maintainer', maintainerName).replace(
-            'email_maintainer', maintainerEmail).replace(
-            'selected_license', selectedLicense)
+            '{{PACKAGE_SLUG}}', packageSlug).replace(
+            '{{MAINTAINER_NAME}}', maintainerName).replace(
+            '{{MAINTAINER_EMAIL}}', maintainerEmail).replace(
+            '{{LICENSE}}', selectedLicense)
     );
 
     // first node
     fs.writeFileSync(path.join(packagePath, packageSlug, `${packageSlug}_node.py`),
     pythonNodeFileContent.replaceAll(
-        'package_slug', packageSlug).replaceAll(
-        'class_name', snakeToCamelCase(packageSlug)));
+        '{{PACKAGE_SLUG}}', packageSlug).replaceAll(
+        '{{CLASS_NAME}}', snakeToCamelCase(packageSlug)));
 }
 
 /**
@@ -367,21 +443,39 @@ function createPythonFiles(packageSlug: string, packagePath: string, packageDesc
 * @param maintainerName first and last name of the maintainer
 * @param selectedLicense license of the package
 */
-function createInterfaceFiles(packageSlug: string, packagePath: string, packageDescription: string,
-    maintainerEmail: string, maintainerName: string, selectedLicense: string) {
+function createInterfaceFiles(packageSlug: string,
+                              packagePath: string,
+                              packageDescription: string,
+                              maintainerEmail: string,
+                              maintainerName: string,
+                              selectedLicense: string)
+{
     // resource
     fs.writeFileSync(path.join(packagePath, 'resource', packageSlug), '');
 
     // package.xml
     fs.writeFileSync(path.join(packagePath, 'package.xml'),
-        xmlFileContent.replace(
-            'package_slug', `${packageSlug}`).replace(
-            'package_description', `${packageDescription}`).replace(
-            'maintainer_email', `${maintainerEmail}`).replace(
-            'maintainer_name', `${maintainerName}`).replace(
-            'package_license', `${selectedLicense}`).replace(
-            'ament_type', 'ament_cmake')
+        interfaceXmlFileContent.replace(
+            '{{PACKAGE_SLUG}}', `${packageSlug}`).replace(
+            '{{PACKAGE_DESCRIPTION}}', `${packageDescription}`).replace(
+            '{{MAINTAINER_EMAIL}}', `${maintainerEmail}`).replace(
+            '{{MAINTAINER_NAME}}', `${maintainerName}`).replace(
+            '{{LICENSE}}', `${selectedLicense}`).replace(
+            '{{AMENT_TYPE}}', 'ament_cmake')
     );
+
+    // CMakeLists.txt
+    fs.writeFileSync(path.join(packagePath, 'CMakeLists.txt'),
+        interfaceCmakeListsFileContent.replace('{{PACKAGE_SLUG}}', packageSlug));
+
+    // Message
+    fs.writeFileSync(path.join(packagePath, 'msg', 'Message1.msg'), msgFileContent);
+
+    // Service
+    fs.writeFileSync(path.join(packagePath, 'srv', 'Service1.srv'), srvFileContent);
+
+    // Action
+    fs.writeFileSync(path.join(packagePath, 'action', 'Action1.action'), actionFileContent);
 }
 
 /**
